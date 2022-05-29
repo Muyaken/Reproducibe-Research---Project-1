@@ -1,0 +1,115 @@
+---
+title: "Project Assignment 1"
+author: "muya"
+date: "5/29/2022"
+output: html_document
+---
+
+Loading and preprocessing the data
+
+```{r}
+activityData <- read.csv(file="activity.csv", header=TRUE)
+```
+
+Obtaining the mean total number of steps taken each day
+
+```{r}
+
+# Get the total steps taken each day
+total_Steps <- aggregate(steps ~ date, activityData, FUN=sum)
+
+# Make a histogram of the total number of steps taken each day
+hist(total_Steps$steps,
+     main = "Total Steps each Day",
+     xlab = "Number of Steps")
+```
+
+```{r}
+# Obtain the mean and median of total steps taken each day
+mean_Steps <- mean(total_Steps$steps, na.rm = TRUE)
+median_Steps <- median(total_Steps$steps, na.rm = TRUE)
+```
+Mean Number of Steps Taken each Day = 1.076618910^{4}    
+Median Number of Steps Taken each Day = 10765
+
+What is the average daily activity pattern?
+
+```{r}
+# Make a time-series plot of the 5-minute interval and the average number of
+# steps taken, averaged across all days.
+library(ggplot2)
+mean_Steps_By_Int <- aggregate(steps ~ interval, activityData, mean)
+ggplot(data = mean_Steps_By_Int, aes(x = interval, y = steps)) +
+  geom_line() +
+  ggtitle("The Average Daily Activity Pattern") +
+  xlab("five minute Interval") +
+  ylab("Average Number of Steps") +
+  theme(plot.title = element_text(hjust = 0.5))
+
+```
+
+```{r}
+# Which five minute interval across all days contain the maximum number of steps
+max_Int <- mean_Steps_By_Int[which.max(mean_Steps_By_Int$steps),]
+```
+
+
+# Imputing Missing Values
+
+```{r}
+# Calculate and report the total number of missing values in the dataset
+missing_Values <- is.na(activityData$steps)
+
+# Devise a strategy for filling in all of the missing values
+```
+There are 17568 missing values. I will replace these missing values with the five day average of that respective interval.
+
+```{r}
+# Create a new dataset that is equal to the original dataset but with the missing data filled in.
+
+imp_activityData <- transform(activityData,
+                              steps = ifelse(is.na(activityData$steps),
+                                             mean_Steps_By_Int$steps[match(activityData$interval, 
+                                                                        mean_Steps_By_Int$interval)],
+                                             activityData$steps))
+
+
+```
+```{r}
+# Make a histogram of the total number of steps taken each day and
+# and report the mean and median.
+impute_Steps_By_Int <- aggregate(steps ~ date, imp_activityData, FUN=sum)
+hist(impute_Steps_By_Int$steps,
+     main = "Imputed Number of Steps Per Day",
+     xlab = "Number of Steps")
+```
+
+```{r}
+impute_Mean_Steps <- mean(impute_Steps_By_Int$steps, na.rm = TRUE)
+impute_Median_Steps <- median(impute_Steps_By_Int$steps, na.rm = TRUE)
+diff_Mean = impute_Mean_Steps - mean_Steps
+diff_Median = impute_Median_Steps - median_Steps
+diff_Total = sum(impute_Steps_By_Int$steps) - sum(total_Steps$steps)
+```
+There is a difference of 0 in the mean steps of the two dataset. There is a difference of -1.076381110^{4} in the median steps of the two dataset.    There is a difference of 8.612950910^{4} in the total steps of the two dataset.
+
+# Are there differences in activity patterns between weekdays and weekends?
+
+```{r}
+
+# Create a new factor variable in the dataset with two levels - "weekend" and "weekday"
+DayType <- function(date) {
+  day <- weekdays(date)
+  if (day %in% c('Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday'))
+      return ("weekeday")
+  else if (day %in% c('Saturday', 'Sunday'))
+      return ("weekend")
+   
+ 
+}
+imp_activityData$date <- as.Date(imp_activityData$date)
+imp_activityData$day <- sapply(imp_activityData$date, FUN = DayType)
+
+```
+
+
